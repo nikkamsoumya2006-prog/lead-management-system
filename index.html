@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Management System</title>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js for Data Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Simulated Auth Modal -->
+  <div id="auth-modal" class="modal active">
+    <div class="modal-content auth-card">
+      <h2><i class="fa-solid fa-chart-line"></i> Lead Manager</h2>
+      <p id="auth-subtitle">Login to access your sales pipeline</p>
+      
+      <form id="auth-form">
+        <div class="form-group">
+          <label for="auth-email">Email Address</label>
+          <input type="email" id="auth-email" placeholder="sales@company.com" required>
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="auth-btn">Login</button>
+      </form>
+      <div class="auth-toggle">
+        <span id="auth-toggle-text">Don't have an account? <a href="#" id="toggle-auth">Register</a></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="brand">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Lead Manager</span>
+      </div>
+      <ul class="nav-links">
+        <li class="active"><a href="#dashboard" data-section="dashboard"><i class="fa-solid fa-table-columns"></i> <span>Dashboard</span></a></li>
+        <li><a href="#leads" data-section="leads"><i class="fa-solid fa-users"></i> <span>Leads</span></a></li>
+        <li><a href="#kanban" data-section="kanban"><i class="fa-solid fa-kanban"></i> <span>Kanban Board</span></a></li>
+        <li><a href="#followups" data-section="followups"><i class="fa-solid fa-calendar-check"></i> <span>Follow-ups</span></a></li>
+        <li><a href="#reports" data-section="reports"><i class="fa-solid fa-chart-pie"></i> <span>Reports</span></a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <button id="dark-mode-toggle" class="btn btn-icon"><i class="fa-solid fa-moon"></i></button>
+        <button id="logout-btn" class="btn btn-outline-danger"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="user-greeting">
+          <h3 id="user-display-name">Welcome, Sales User</h3>
+        </div>
+        <div class="top-bar-actions">
+          <button class="btn btn-primary" onclick="openAddLeadModal()"><i class="fa-solid fa-plus"></i> Add Lead</button>
+        </div>
+      </header>
+
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="content-section active">
+        <h2>Dashboard</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <i class="fa-solid fa-users icon-new"></i>
+            <div>
+              <p>Total Leads</p>
+              <h3 id="stat-total">0</h3>
+            </div>
+          </div>
+          <div class="metric-card">
+            <i class="fa-solid fa-phone icon-contacted"></i>
+            <div>
+              <p>Contacted</p>
+              <h3 id="stat-contacted">0</h3>
+            </div>
+          </div>
+          <div class="metric-card">
+            <i class="fa-solid fa-magnifying-glass icon-qualified"></i>
+            <div>
+              <p>Qualified</p>
+              <h3 id="stat-qualified">0</h3>
+            </div>
+          </div>
+          <div class="metric-card">
+            <i class="fa-solid fa-circle-check icon-converted"></i>
+            <div>
+              <p>Converted</p>
+              <h3 id="stat-converted">0</h3>
+            </div>
+          </div>
+          <div class="metric-card">
+            <i class="fa-solid fa-percent icon-rate"></i>
+            <div>
+              <p>Conversion Rate</p>
+              <h3 id="stat-rate">0%</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h4>Lead Pipeline</h4>
+            <canvas id="pipelineChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Leads by Source</h4>
+            <canvas id="sourceChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leads List Section -->
+      <section id="leads" class="content-section">
+        <div class="section-header">
+          <h2>Lead Management</h2>
+          <button class="btn btn-secondary" onclick="exportLeadsCSV()"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="lead-search" placeholder="Search by name, email, or company..." oninput="filterLeads()">
+          <select id="status-filter" onchange="filterLeads()">
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="lost">Lost</option>
+            <option value="converted">Converted</option>
+          </select>
+          <select id="source-filter" onchange="filterLeads()">
+            <option value="all">All Sources</option>
+            <option value="Website">Website</option>
+            <option value="Referral">Referral</option>
+            <option value="Cold Call">Cold Call</option>
+            <option value="Social Media">Social Media</option>
+          </select>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Score</th>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Contact</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Kanban Board Section -->
+      <section id="kanban" class="content-section">
+        <h2>Kanban Status Board</h2>
+        <div class="kanban-board">
+          <div class="kanban-column" data-status="new">
+            <div class="column-header status-new"><i class="fa-solid fa-thumbtack"></i> New</div>
+            <div class="kanban-cards" id="kanban-new"></div>
+          </div>
+          <div class="kanban-column" data-status="contacted">
+            <div class="column-header status-contacted"><i class="fa-solid fa-phone"></i> Contacted</div>
+            <div class="kanban-cards" id="kanban-contacted"></div>
+          </div>
+          <div class="kanban-column" data-status="qualified">
+            <div class="column-header status-qualified"><i class="fa-solid fa-magnifying-glass"></i> Qualified</div>
+            <div class="kanban-cards" id="kanban-qualified"></div>
+          </div>
+          <div class="kanban-column" data-status="lost">
+            <div class="column-header status-lost"><i class="fa-solid fa-xmark"></i> Lost</div>
+            <div class="kanban-cards" id="kanban-lost"></div>
+          </div>
+          <div class="kanban-column" data-status="converted">
+            <div class="column-header status-converted"><i class="fa-solid fa-check"></i> Converted</div>
+            <div class="kanban-cards" id="kanban-converted"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Follow-up Scheduler Section -->
+      <section id="followups" class="content-section">
+        <h2>Follow-up Scheduler</h2>
+        <div class="followup-grid">
+          <div class="card">
+            <h3>Schedule Follow-up</h3>
+            <form id="followup-form">
+              <div class="form-group">
+                <label>Select Lead</label>
+                <select id="followup-lead-id" required></select>
+              </div>
+              <div class="form-group">
+                <label>Date & Time</label>
+                <input type="datetime-local" id="followup-date" required>
+              </div>
+              <div class="form-group">
+                <label>Notes</label>
+                <textarea id="followup-notes" rows="3" placeholder="Follow-up details..." required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Schedule Task</button>
+            </form>
+          </div>
+          <div class="card">
+            <h3>Scheduled Follow-ups</h3>
+            <ul id="followup-list" class="activity-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reports Section -->
+      <section id="reports" class="content-section">
+        <h2>Reports & Analytics</h2>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h4>Conversion Performance</h4>
+            <canvas id="conversionReportChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Source Efficiency</h4>
+            <canvas id="sourceEfficiencyChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Add/Edit Lead Modal -->
+  <div id="lead-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('lead-modal')">&times;</span>
+      <h3 id="lead-modal-title">Add New Lead</h3>
+      <form id="lead-form">
+        <input type="hidden" id="lead-id">
+        <div class="form-group">
+          <label for="lead-name">Full Name</label>
+          <input type="text" id="lead-name" required>
+        </div>
+        <div class="form-group">
+          <label for="lead-email">Email Address</label>
+          <input type="email" id="lead-email" required>
+        </div>
+        <div class="form-group">
+          <label for="lead-phone">Phone Number</label>
+          <input type="text" id="lead-phone" required>
+        </div>
+        <div class="form-group">
+          <label for="lead-company">Company</label>
+          <input type="text" id="lead-company" required>
+        </div>
+        <div class="form-group">
+          <label for="lead-source">Lead Source</label>
+          <select id="lead-source">
+            <option value="Website">Website</option>
+            <option value="Referral">Referral</option>
+            <option value="Cold Call">Cold Call</option>
+            <option value="Social Media">Social Media</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="lead-status">Status</label>
+          <select id="lead-status">
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="lost">Lost</option>
+            <option value="converted">Converted</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="lead-notes">Notes</label>
+          <textarea id="lead-notes" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Save Lead</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lead Detail & Activity Timeline Modal -->
+  <div id="detail-modal" class="modal">
+    <div class="modal-content large">
+      <span class="close-btn" onclick="closeModal('detail-modal')">&times;</span>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <!-- Email/SMS Simulation Modal -->
+  <div id="comm-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('comm-modal')">&times;</span>
+      <h3 id="comm-title">Send Communication</h3>
+      <form id="comm-form">
+        <input type="hidden" id="comm-lead-id">
+        <input type="hidden" id="comm-type">
+        <div class="form-group">
+          <label for="comm-recipient">Recipient</label>
+          <input type="text" id="comm-recipient" readonly>
+        </div>
+        <div class="form-group">
+          <label for="comm-message">Message Content</label>
+          <textarea id="comm-message" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Send Message</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
